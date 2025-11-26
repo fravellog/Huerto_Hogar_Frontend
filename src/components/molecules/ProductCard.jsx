@@ -1,9 +1,15 @@
-// src/components/molecules/ProductCard.jsx
 import Image from '../atoms/Image';
 import Button from '../atoms/Button';
 
 export default function ProductCard({ product }) {
-  const { id, nombre, precio, imagen } = product;
+  // 1. Desestructuración con valores por defecto para evitar errores
+  const { 
+    id, 
+    nombre = "Producto sin nombre", 
+    precio = 0, 
+    imagen = "/placeholder.png", 
+    unidad = "unidad" // Valor por defecto si falta en la DB
+  } = product || {}; // Protección si 'product' llega null
 
   const handleAddToCartClick = () => {
     const carrito = JSON.parse(localStorage.getItem('carrito') || '[]');
@@ -18,11 +24,22 @@ export default function ProductCard({ product }) {
     alert(`${nombre} agregado al carrito`);
   };
 
+  // Función segura para formatear pesos
+  const formatoPeso = (valor) => {
+    if (typeof valor !== 'number') return '$0';
+    return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(valor);
+  };
+
   return (
     <div className="producto-card">
       <Image src={imagen} alt={nombre} className="producto-img" />
       <h3>{nombre}</h3>
-      <h4 className="precio">{precio}</h4>
+      
+      {/* 2. Renderizado seguro del precio */}
+      <h4 className="precio">
+        Precio: {formatoPeso(precio)} / {unidad}
+      </h4>
+
       <Button onClick={handleAddToCartClick} className="agregar-carrito">
         Agregar al carrito
       </Button>
