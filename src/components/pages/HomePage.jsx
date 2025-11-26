@@ -1,41 +1,60 @@
+import React, { useEffect, useState, useContext } from 'react';
+import { Link } from 'react-router-dom';
+import axios from 'axios'; // Importamos axios
 import MainLayout from '../templates/MainLayout';
 import FeaturedProducts from '../organisms/FeaturedProducts';
 import Banner from '../organisms/Banner';
-import { Link } from 'react-router-dom'; // Para el enlace del botón
-import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
- 
- 
-// Datos de ejemplo
-const featuredProductsData = [
-   { id: 1, nombre: "Tomates Orgánicos", precio: "Precio: $1.610/kg", imagen: "public/Verduras/tomate.png" }, // Formato precio como en HTML
-   { id: 2, nombre: "Lechugas Frescas", precio: "Precio: $1.180/unidad", imagen: "public/Verduras/Lechuga.png" },
-   { id: 3, nombre: "Zanahorias Frescas", precio: "Precio: $1.200/kg", imagen: "public/Verduras/Zanahoria.png" },
-];
- 
- 
+
 export default function HomePage() {
   const { isAuthenticated } = useContext(AuthContext);
+  
+  // 1. Estado para productos destacados
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+
+  // 2. Cargar productos desde Azure al montar el componente
+  useEffect(() => {
+    axios.get('http://localhost:3000/api/products')
+      .then(response => {
+        // Tomamos, por ejemplo, los primeros 3 productos para mostrar como destacados
+        // O podrías filtrar los que tengan stock > 0, etc.
+        const destacados = response.data.slice(0, 3);
+        setFeaturedProducts(destacados);
+      })
+      .catch(error => console.error("Error al cargar destacados:", error));
+  }, []);
 
   const handleAddToCart = (product) => {
     console.log('Añadir al carrito:', product);
-    // Aquí iría la lógica original del modal (abrirModalCantidad)
-    // adaptada a React (probablemente usando estado para mostrar/ocultar un modal)
+    // Aquí puedes disparar la lógica del carrito o evento window
+    // (Igual a como lo haces en ProductCard)
+    const carrito = JSON.parse(localStorage.getItem('carrito') || '[]');
+    const idx = carrito.findIndex(p => p.id === product.id);
+    if (idx >= 0) {
+      carrito[idx].cantidad += 1;
+    } else {
+      carrito.push({ ...product, cantidad: 1 });
+    }
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    window.dispatchEvent(new Event('carritoActualizado'));
+    alert(`${product.nombre} agregado al carrito desde Home`);
   };
- 
- 
+
   return (
     <MainLayout>
       <Banner />
-      <FeaturedProducts products={featuredProductsData} onAddToCart={handleAddToCart} />
-       {/* Contenedor y enlace "Ver Productos" con clases CSS */}
-       <div style={{display:'flex', justifyContent:'center', margin:'32px 0'}}> {/* Estilo en línea como en tu HTML */}
-      <Link to={isAuthenticated ? '/tienda' : '/login'} className="btn btn-ver-productos"> {/* Usa las clases CSS */}
-        Ver productos
-      </Link>
+      
+      {/* Pasamos los datos REALES (featuredProducts) en lugar del array falso */}
+      <FeaturedProducts 
+        products={featuredProducts} 
+        onAddToCart={handleAddToCart} 
+      />
+
+       <div style={{display:'flex', justifyContent:'center', margin:'32px 0'}}>
+        <Link to={isAuthenticated ? '/tienda' : '/login'} className="btn btn-ver-productos">
+          Ver productos
+        </Link>
        </div>
-       {/* Aquí podrías añadir el componente Modal si lo creas */}
-       {/* <QuantityModal /> */}
     </MainLayout>
   );
 }
